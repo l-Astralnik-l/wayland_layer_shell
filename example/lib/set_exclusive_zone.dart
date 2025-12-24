@@ -20,7 +20,7 @@ class _SetExclusiveZoneState extends State<SetExclusiveZone> {
             value: isExculiveZone,
             onChanged: (val) => _onSelectionChanged(val)),
       ],
-    );
+    ); 
   }
 
   _onSelectionChanged(bool val) async {

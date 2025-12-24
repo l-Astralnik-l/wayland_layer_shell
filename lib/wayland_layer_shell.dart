@@ -1,8 +1,19 @@
+import 'dart:ffi';
+
 import 'package:flutter/services.dart';
 import 'package:wayland_layer_shell/types.dart';
 
 class WaylandLayerShell {
   final methodChannel = const MethodChannel('wayland_layer_shell');
+
+  Future<void> setInputRegion(
+    List<Map<String, int>> regions
+  ) async {
+    await methodChannel.invokeMethod(
+      "setInputRegion", 
+      regions
+    );
+  }
 
   Future<String?> getPlatformVersion() async {
     final version =

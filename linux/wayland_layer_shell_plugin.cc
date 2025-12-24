@@ -187,6 +187,119 @@ static FlMethodResponse *get_keyboard_mode(WaylandLayerShellPlugin *self)
   return FL_METHOD_RESPONSE(fl_method_success_response_new(result));
 }
 
+
+static FlMethodResponse* set_input_region(
+    WaylandLayerShellPlugin* self,
+    FlMethodCall* method_call
+) {
+  g_return_val_if_fail(self != NULL, FL_METHOD_RESPONSE(fl_method_not_implemented_response_new()));
+
+  /* Получаем FlView через регистратор (вернёт NULL если headless). */
+  FlPluginRegistrar* registrar = self->registrar;
+  if (!registrar) {
+    return FL_METHOD_RESPONSE(
+        fl_method_error_response_new("no_registrar",
+                                     "FlPluginRegistrar is NULL",
+                                     NULL));
+  }
+
+  FlView* view = fl_plugin_registrar_get_view(registrar);
+  if (!view) {
+    return FL_METHOD_RESPONSE(
+        fl_method_error_response_new("no_view",
+                                     "FlView is NULL (headless?)",
+                                     NULL));
+  }
+
+  GtkWidget* widget = GTK_WIDGET(view);
+  gtk_widget_realize(widget);
+
+  GdkWindow* gdk_window = gtk_widget_get_window(widget);
+  if (!gdk_window) {
+    return FL_METHOD_RESPONSE(
+        fl_method_error_response_new("no_gdk_window",
+                                     "GdkWindow is NULL",
+                                     NULL));
+  }
+
+  FlValue* args = fl_method_call_get_args(method_call);
+  if (!args) {
+    return FL_METHOD_RESPONSE(
+        fl_method_error_response_new("bad_args",
+                                     "Expected arguments",
+                                     NULL));
+  }
+
+  cairo_region_t* region = cairo_region_create();
+
+  /* Проверяем, пришёл ли список регионов */
+  if (fl_value_get_type(args) == FL_VALUE_TYPE_LIST) {
+    size_t len = fl_value_get_length(args);
+    for (size_t i = 0; i < len; i++) {
+      FlValue* r = fl_value_get_list_value(args, i);
+      if (!r || fl_value_get_type(r) != FL_VALUE_TYPE_MAP) {
+        continue;
+      }
+
+      FlValue* vx = fl_value_lookup_string(r, "x");
+      FlValue* vy = fl_value_lookup_string(r, "y");
+      FlValue* vw = fl_value_lookup_string(r, "w");
+      FlValue* vh = fl_value_lookup_string(r, "h");
+
+      if (!vx || !vy || !vw || !vh ||
+          fl_value_get_type(vx) != FL_VALUE_TYPE_INT ||
+          fl_value_get_type(vy) != FL_VALUE_TYPE_INT ||
+          fl_value_get_type(vw) != FL_VALUE_TYPE_INT ||
+          fl_value_get_type(vh) != FL_VALUE_TYPE_INT) {
+        continue; // игнорируем некорректный регион
+      }
+
+      int x = fl_value_get_int(vx);
+      int y = fl_value_get_int(vy);
+      int w = fl_value_get_int(vw);
+      int h = fl_value_get_int(vh);
+
+      cairo_rectangle_int_t rect = { x, y, w, h };
+      cairo_region_union_rectangle(region, &rect);
+    }
+  }
+  /* Если пришла карта с одним регионом (как раньше), поддерживаем для обратной совместимости */
+  else if (fl_value_get_type(args) == FL_VALUE_TYPE_MAP) {
+    FlValue* vx = fl_value_lookup_string(args, "x");
+    FlValue* vy = fl_value_lookup_string(args, "y");
+    FlValue* vw = fl_value_lookup_string(args, "w");
+    FlValue* vh = fl_value_lookup_string(args, "h");
+
+    if (vx && vy && vw && vh &&
+        fl_value_get_type(vx) == FL_VALUE_TYPE_INT &&
+        fl_value_get_type(vy) == FL_VALUE_TYPE_INT &&
+        fl_value_get_type(vw) == FL_VALUE_TYPE_INT &&
+        fl_value_get_type(vh) == FL_VALUE_TYPE_INT) {
+
+      int x = fl_value_get_int(vx);
+      int y = fl_value_get_int(vy);
+      int w = fl_value_get_int(vw);
+      int h = fl_value_get_int(vh);
+
+      cairo_rectangle_int_t rect = { x, y, w, h };
+      cairo_region_union_rectangle(region, &rect);
+    }
+  }
+  else {
+    cairo_region_destroy(region);
+    return FL_METHOD_RESPONSE(
+        fl_method_error_response_new("bad_args",
+                                     "Expected map or list of maps",
+                                     NULL));
+  }
+
+  gdk_window_input_shape_combine_region(gdk_window, region, 0, 0);
+  cairo_region_destroy(region);
+
+  return FL_METHOD_RESPONSE(
+      fl_method_success_response_new(fl_value_new_bool(true)));
+}
+
 // Called when a method call is received from Flutter.
 static void wayland_layer_shell_plugin_handle_method_call(
     WaylandLayerShellPlugin *self,
@@ -200,6 +313,10 @@ static void wayland_layer_shell_plugin_handle_method_call(
   if (strcmp(method, "getPlatformVersion") == 0)
   {
     response = get_platform_version();
+  }
+  else if (strcmp(method, "setInputRegion") == 0)
+  {
+    response = set_input_region(self, method_call);
   }
   else if (strcmp(method, "isSupported") == 0)
   {

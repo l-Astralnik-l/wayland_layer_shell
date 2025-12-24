@@ -27,6 +27,7 @@ class _SetMonitorState extends State<SetMonitor> {
   }
 
   setMonitor(int id) {
+    print(id);
     if (id == -1) {
       _waylandLayerShellPlugin.setMonitor(null);
       return;
