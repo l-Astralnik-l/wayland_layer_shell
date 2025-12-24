@@ -56,7 +56,7 @@ static void my_application_activate(GApplication* application) {
 
   ...
   
-  gtk_window_set_default_size(window, 1280, 720); // WARNING from fork author: If your monitor can be bigger then this, make this values bigger
+  gtk_window_set_default_size(window, 1280, 720); # WARNING from fork author: If your monitor can be bigger then this, make this values bigger
 - gtk_widget_show(GTK_WIDGET(window));
 + gtk_widget_realize(GTK_WIDGET(window));
 
