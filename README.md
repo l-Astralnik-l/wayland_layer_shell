@@ -1,6 +1,6 @@
 # About fork
 
-Added fuction setInputRegion ([gdk_window_input_shape_combine_region](https://docs.gtk.org/gdk3/method.Window.input_shape_combine_region.html))
+Added function setInputRegion ([gdk_window_input_shape_combine_region](https://docs.gtk.org/gdk3/method.Window.input_shape_combine_region.html))
 Example
 ```Dart
 final waylandLayerShellPlugin = WaylandLayerShell();
