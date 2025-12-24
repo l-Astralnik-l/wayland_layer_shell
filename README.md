@@ -1,3 +1,18 @@
+# About fork
+
+Added fuction setInputRegion ([gdk_window_input_shape_combine_region](https://docs.gtk.org/gdk3/method.Window.input_shape_combine_region.html))
+Example
+```Dart
+final waylandLayerShellPlugin = WaylandLayerShell();
+// init plugin
+await waylandLayerShellPlugin.setInputRegion([
+  {"x": 0, "y": 0, "w": 1212, "h": 35} // You can add regions as much as you want
+  {"x": 20, "y": 20, "w": 500, "h": 500}
+]);
+```
+
+WARNING!!! Added code was created using LLM, I can't guarantee full compatibily. I'm not a GTK dev, but need this. On the outside, it looks normal...
+
 # wayland_layer_shell
 
 This plugin exposes the `zwlr_layer_shell_v1` protocol using the [gtk-layer-shell](https://github.com/wmww/gtk-layer-shell) library, enabling the creation of desktop components such as panels, taskbars, application launchers, etc. with Flutter on Wayland systems.
@@ -41,7 +56,7 @@ static void my_application_activate(GApplication* application) {
 
   ...
   
-  gtk_window_set_default_size(window, 1280, 720);
+  gtk_window_set_default_size(window, 1280, 720); // WARNING from fork author: If your monitor can be bigger then this, make this values bigger
 - gtk_widget_show(GTK_WIDGET(window));
 + gtk_widget_realize(GTK_WIDGET(window));
 
